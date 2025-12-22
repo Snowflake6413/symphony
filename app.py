@@ -1,6 +1,7 @@
 import os
 import requests
 import time
+import datetime
 import traceback
 import re
 import json
@@ -159,6 +160,54 @@ def download_slack_img(file_url, token):
 def handle_msg_event(body, logger):
     logger.info(body)
 
+@app.command("/symphony-help")
+def help_msg(ack, respond, logger, body):
+    ack()
+    logger.info(body)
+
+    blocks = [
+		{
+			"type": "section",
+			"text": {
+				"type": "plain_text",
+				"text": "Hi! My name is Symphony! Here is some things I can assist you with! :agahi:",
+				"emoji": True
+			}
+		},
+		{
+			"type": "section",
+			"text": {
+				"type": "plain_text",
+				"text": "1. Chat: Just mention me to talk.",
+				"emoji": True
+			}
+		},
+		{
+			"type": "section",
+			"text": {
+				"type": "plain_text",
+				"text": "2. Search: I can search the web for more information",
+				"emoji": True
+			}
+		},
+		{
+			"type": "section",
+			"text": {
+				"type": "plain_text",
+				"text": "3. Generate Images: I can generate images you request with ",
+				"emoji": True
+			}
+		},
+		{
+			"type": "section",
+			"text": {
+				"type": "plain_text",
+				"text": "4. Vision: I can see images. Upload an image and ask me about it.",
+				"emoji": True
+			}
+		}
+	]
+    respond(blocks=blocks)
 
 @app.message("Ping")
 def hello_back(ack, say, client, body, event):
@@ -237,9 +286,14 @@ def ai_msg(event, say, body, client, ack, respond):
      .limit(10) \
      .execute()
     
+
+    current_time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    
     msgs = [{"role": "system", 
     "content": f"""The assistant is named Symphony. You are a helpful, harmless assistant. 
 You are currently talking to {user_name}.
+
+The current time is {current_time}
 
 You have access to the following tools:
 - web_search: Use this to search for current information, news, facts, or anything you don't have knowledge about
