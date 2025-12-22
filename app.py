@@ -46,6 +46,9 @@ moderation_client = OpenAI(
 
 app=App(token=SLACK_BOT_TOKEN)
 
+
+
+
 tools = [
     {
         "type": "function",
@@ -142,6 +145,15 @@ def generate_img(prompt):
         traceback.print_exc()
         return None
 
+def download_slack_img(file_url, token):
+    try: 
+        res = requests.get(file_url, headers={"Authorization": f"Bearer {token}"})
+        if res.status_code == 200:
+            return base64.b64encode(res.content).decode('utf-8')
+        return None
+    except Exception as e:
+        print("Failed to download IMG")
+        return None
 
 @app.event("message")
 def handle_msg_event(body, logger):
@@ -168,7 +180,7 @@ def ai_msg(event, say, body, client, ack, respond):
     if event.get("type") == "message" and event.get("channel_type") != "im":
         return
     
-    
+
     user_id = event['user']
 
     try:
@@ -183,7 +195,7 @@ def ai_msg(event, say, body, client, ack, respond):
     thread_ts=event.get("thread_ts", event["ts"])
     channel_id=event["channel"]
     msg_ts=event["ts"]
-    
+    files = event.get("files", [])
     ack()
 
     try:
@@ -247,6 +259,33 @@ When using image_generate, ALWAYS optimize the prompt for best results:
 }]
     for row in mem_get.data:
         msgs.append({"role": row["role"], "content": row ["content"]})
+
+        current_img_data = None
+        if files:
+            for file in files:
+                if file.get("mimetype", "").startswith("image/"):
+                    print(f"Got img :3 {file.get('name')}")
+                    prv_url = file.get("url_private")
+                    if prv_url:
+                        b64_img = download_slack_img(prv_url, SLACK_BOT_TOKEN)
+                        if b64_img:
+                            current_img_data = b64_img
+                            break
+        if current_img_data:
+            last_msg = msgs[-1]
+            text_content = last_msg["content"]
+
+            vision_content = [
+                {"type": "text", "text": text_content},
+                {
+                "type": "image_url",
+                "image_url": {
+                    "url": f"data:image/jpeg;base64,{current_img_data}"
+                }
+            }
+            ]
+            msgs[-1]["content"] = vision_content
+        
 
     try:
         client.reactions_add(
