@@ -181,22 +181,25 @@ def ai_msg(event, say, body, client, ack, respond):
     ack()
 
     try:
-        
         moderation = moderation_client.moderations.create(input=user_message)
         result = moderation.results[0]
 
         if result.flagged:
              categories = result.categories
+
              if categories.self_harm or categories.self_harm_instructions or categories.self_harm_intent:
               say(
-                  text=f"I am unable to fufill your request. It looks like you're going through a hard time. Please check out this resource. https://hackclub.enterprise.slack.com/docs/T0266FRGM/F08HU1DD1AP. Remember, you are not alone. :ohneheart:"
+                  text=f"I am unable to fufill your request. It looks like you're going through a hard time. Please check out this resource. https://hackclub.enterprise.slack.com/docs/T0266FRGM/F08HU1DD1AP. Remember, you are not alone. :ohneheart:",
+                  thread_ts=thread_ts
               )
         else:     
             say(
-                text=f"I cannot fulfill this request because it violates my content moderation policies."
+                text=f"I cannot fulfill this request because it violates my content moderation policies.",
+                thread_ts=thread_ts
             )
 
         return
+    
     except Exception as e:
                     print("unable to call moderation API")
 
