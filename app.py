@@ -14,14 +14,21 @@ from io import BytesIO
 
 load_dotenv()
 
+# --------- SLACK ENVS ------------
 SLACK_BOT_TOKEN= os.getenv("SLACK_BOT_TOKEN")
 SLACK_APP_TOKEN= os.getenv("SLACK_APP_TOKEN")
+# --------- AI CONFIG ------------
 AI_KEY = os.getenv("AI_KEY")
+AI_BASE_URL = os.getenv("AI_BASE_URL")
+DEFAULT_MODEL = os.getenv("DEFAULT_MODEL")
+# ---------- MODERATION CONFIG ----------
+MODERATION_URL = os.getenv("MODERATION_URL")
+MODERATION_KEY = os.getenv("MODERATION_KEY")
+# --------- TOOLS ------------
 SEARCH_API_URL= os.getenv("SEARCH_API_URL")
 SEARCH_API_KEY= os.getenv("SEARCH_API_KEY")
-AI_BASE_URL = os.getenv("AI_BASE_URL")
 IMGGEN_MODEL = os.getenv("IMGGEN_MODEL")
-DEFAULT_MODEL = os.getenv("DEFAULT_MODEL")
+# --------- MEMORY CONFIG ---------
 SUPABASE_URL= os.getenv("SUPABASE_URL")
 SUPABASE_KEY= os.getenv("SUPABASE_KEY")
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
@@ -30,6 +37,11 @@ supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 default_client = OpenAI(
     api_key=AI_KEY,
    base_url=AI_BASE_URL
+)
+
+moderation_client = OpenAI(
+    api_key=MODERATION_KEY,
+    base_url=MODERATION_URL
 )
 
 app=App(token=SLACK_BOT_TOKEN)
@@ -167,6 +179,26 @@ def ai_msg(event, say, body, client, ack, respond):
     msg_ts=event["ts"]
     
     ack()
+
+    try:
+        
+        moderation = moderation_client.moderations.create(input=user_message)
+        result = moderation.results[0]
+
+        if result.flagged:
+             categories = result.categories
+             if categories.self_harm or categories.self_harm_instructions or categories.self_harm_intent:
+              say(
+                  text=f"I am unable to fufill your request. It looks like you're going through a hard time. Please check out this resource. https://hackclub.enterprise.slack.com/docs/T0266FRGM/F08HU1DD1AP. Remember, you are not alone. :ohneheart:"
+              )
+        else:     
+            say(
+                text=f"I cannot fulfill this request because it violates my content moderation policies."
+            )
+
+        return
+    except Exception as e:
+                    print("unable to call moderation API")
 
     supabase.table("chat_mem").insert({
         "channel_id": channel_id,
