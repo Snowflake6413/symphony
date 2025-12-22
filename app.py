@@ -1,4 +1,5 @@
 import os
+import time
 import requests
 import time
 import datetime
@@ -387,6 +388,8 @@ When using image_generate, ALWAYS optimize the prompt for best results:
             target_model = settings_res.data[0]["selected_model"]
     except Exception as e:
         print(f"Failed to fetch custom model, defaulting: {e}")
+
+    start_time = time.time()
     
     try:
         response=default_client.chat.completions.create(
@@ -466,7 +469,32 @@ When using image_generate, ALWAYS optimize the prompt for best results:
         "content": ai_rspnd
         }).execute()
 
-        say(text=ai_rspnd, thread_ts=thread_ts)
+        end_time = time.time()
+        latency = round(end_time - start_time, 2)
+
+        blocks = [
+		{
+			"type": "section",
+			"text": {
+				"type": "mrkdwn",
+				"text": f"{ai_rspnd}"
+			}
+		},
+		{
+			"type": "divider"
+		},
+		{
+			"type": "section",
+			"text": {
+				"type": "plain_text",
+				"text": f"Model: {target_model} | Latency: {latency}",
+				"emoji": True
+			}
+		}
+	]
+
+
+        say(blocks=blocks, thread_ts=thread_ts)
 
         client.reactions_remove(
             name="typingresponse",
