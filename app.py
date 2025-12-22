@@ -162,7 +162,13 @@ def hello_back(ack, say, client, body, event):
 
 
 @app.event("app_mention")
+@app.event("message")
 def ai_msg(event, say, body, client, ack, respond):
+
+    if event.get("type") == "message" and event.get("channel_type") != "im":
+        return
+    
+    
     user_id = event['user']
 
     try:
