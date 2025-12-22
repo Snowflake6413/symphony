@@ -233,7 +233,15 @@ When using image_generate, ALWAYS optimize the prompt for best results:
                 function_name = tool_call.function.name
                 arguments = json.loads(tool_call.function.arguments)
                 if function_name == "web_search":
+                    status_msg = client.chat_postMessage(
+                        channel=channel_id,
+                        thread_ts=thread_ts,
+                        text=f"I am currently searching the web for your query. Please wait!"
+                    )
                     the_result = search_the_web(arguments.get("query"))
+
+                    client.chat_delete(channel=channel_id, ts=status_msg["ts"])
+
                 elif function_name == "image_generate":
                     status_msg = client.chat_postMessage(
                         channel=channel_id,
