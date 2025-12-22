@@ -2,6 +2,7 @@ import os
 import requests
 import time
 import traceback
+import re
 import json
 import base64
 from slack_bolt import App
@@ -99,43 +100,31 @@ def generate_img(prompt):
             timeout=60
         )
 
-
-        print(f"RAW AI RESPONSE: {image_response}")
-
-        content = image_response.choices[0].message.content
-
-        print(f"Message object: {image_response.choices[0].message}")
-        print(f"Message attributes: {dir(image_response.choices[0].message)}")
-
-        if not content:
-            print("content is empty!")
-            return None
+        msg_obj = image_response.choices[0].message
+        content_text = ""
         
-        if "base64," in content:
-            content = content.split("base64,")[1]
+        if msg_obj.content:
+            content_text = str(msg_obj.content)
 
-            content = content.strip().strip('"').strip("'")
-
-
-        # TRY THE DECODE.......................hurr
-        try:
-            return base64.b64decode(content)
-        except Exception as decode_err:
-            print(f"cannot decode the code directly :( trying the json method... {decode_err}")
-
+        if len(content_text) < 10: 
             try:
-                json_data = json.loads(content)
-                if "b64_json" in json_data:
-                    return base64.b64decode(json_data["b64_json"])
+                content_text = str(msg_obj.model_dump())
             except:
-                print("failed to do the json method")
+                content_text = str(msg_obj)
 
-        print("unable to decode IMG")
-        return None
+        b64_pattern = r'(data:image\/[^;]+;base64,[a-zA-Z0-9+/=]+)'
+        b64_match = re.search(b64_pattern, content_text)
 
+        if b64_match:
+            print("Found Base64 string via Regex!")
+            full_b64_url = b64_match.group(1)
+            b64_string = full_b64_url.split('base64,')[1]
+            try:
+                return base64.b64decode(b64_string)
+            except Exception as e:
+                print(f"Regex found base64 but failed to decode: {e}")
+                return None
 
-    
-        
     except Exception as e:
         print(f"waahhh! cannot generate image! {e}")
         traceback.print_exc()
@@ -195,7 +184,26 @@ def ai_msg(event, say, body, client, ack, respond):
      .limit(10) \
      .execute()
     
-    msgs = [{"role": "system", "content": f"The assistant is named Symphony. You are a helpful, harmless assistant. You are currently talking to {user_name}."}]
+    msgs = [{"role": "system", 
+    "content": f"""The assistant is named Symphony. You are a helpful, harmless assistant. 
+You are currently talking to {user_name}.
+
+You have access to the following tools:
+- web_search: Use this to search for current information, news, facts, or anything you don't have knowledge about
+- image_generate: Use this to create images based on user requests
+
+Tool Usage Guidelines:
+- Always use web_search when users ask about current events, recent information, or anything that requires up-to-date data
+- Use image_generate when users ask you to create, generate, or make images
+
+Image Generation Guidelines:
+When using image_generate, ALWAYS optimize the prompt for best results:
+- If the user's request is vague or short (e.g., "make a cat"), expand it into a detailed, high-quality prompt
+- Include specific details about: style, lighting, composition, colors, mood, and artistic qualities
+- Add descriptive adjectives and specify the medium (e.g., "digital art", "oil painting", "3D render", "photorealistic")
+- Example transformation: "a cat" → "a majestic orange tabby cat with bright green eyes, sitting on a windowsill bathed in warm golden hour sunlight, highly detailed digital art, soft focus background, cozy atmosphere"
+- For simple requests, enhance them; for already detailed requests, use them as-is."""
+}]
     for row in mem_get.data:
         msgs.append({"role": row["role"], "content": row ["content"]})
 
