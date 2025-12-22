@@ -235,8 +235,15 @@ When using image_generate, ALWAYS optimize the prompt for best results:
                 if function_name == "web_search":
                     the_result = search_the_web(arguments.get("query"))
                 elif function_name == "image_generate":
+                    status_msg = client.chat_postMessage(
+                        channel=channel_id,
+                        thread_ts=thread_ts,
+                        text=f"I am currently using {IMGGEN_MODEL} to generate your image. Please wait!"
+                    )
                     prompt = arguments.get("prompt")
                     image_bytes = generate_img(prompt)
+
+                    client.chat_delete(channel=channel_id, ts=status_msg["ts"])
 
                     if image_bytes:
                         try:
