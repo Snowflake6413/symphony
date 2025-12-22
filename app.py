@@ -22,6 +22,7 @@ SLACK_APP_TOKEN= os.getenv("SLACK_APP_TOKEN")
 AI_KEY = os.getenv("AI_KEY")
 AI_BASE_URL = os.getenv("AI_BASE_URL")
 DEFAULT_MODEL = os.getenv("DEFAULT_MODEL")
+ALLOWED_MODELS = ["openai/gpt-5-mini", "moonshotai/kimi-k2-0905", "openai/gpt-oss-120b", "qwen/qwen3-32b", "google/gemini-3-flash-preview" ]
 # ---------- MODERATION CONFIG ----------
 MODERATION_URL = os.getenv("MODERATION_URL")
 MODERATION_KEY = os.getenv("MODERATION_KEY")
@@ -159,6 +160,32 @@ def download_slack_img(file_url, token):
 @app.event("message")
 def handle_msg_event(body, logger):
     logger.info(body)
+
+@app.command("/model")
+def switch_model(ack, body, respond, logger, command):
+    ack()
+    logger.info(body)
+    requested_model = command["text"].strip()
+    channel_id = command["channel_id"]
+
+    if not requested_model:
+        respond(f"Current available models: {', '.join(ALLOWED_MODELS)}\nUsage: `/model moonshotai/kimi-k2-0905`")
+        return
+
+    if requested_model not in ALLOWED_MODELS:
+        respond(f"Invalid model {requested_model}. Please choose from: {', '.join(ALLOWED_MODELS)}")
+        return
+
+    try:
+        supabase.table("bot_settings").upsert({
+            "channel_id": channel_id,
+            "selected_model": requested_model
+        }).execute()
+        respond(f"Success! I have switched the model to {requested_model} for this channel.")
+    except Exception as e:
+        print(f"Unable to switch model! {e}")
+        respond(f"Failed to switch to model. {e}")
+
 
 @app.command("/symphony-help")
 def help_msg(ack, respond, logger, body):
@@ -349,10 +376,21 @@ When using image_generate, ALWAYS optimize the prompt for best results:
         )
     except Exception as e:
         print(f"Unable to add reaction. {e}")
+
+    target_model = DEFAULT_MODEL
+    try:
+        settings_res = supabase.table("bot_settings") \
+            .select("selected_model") \
+            .eq("channel_id", channel_id) \
+            .execute()
+        if settings_res.data and len(settings_res.data) > 0:
+            target_model = settings_res.data[0]["selected_model"]
+    except Exception as e:
+        print(f"Failed to fetch custom model, defaulting: {e}")
     
     try:
         response=default_client.chat.completions.create(
-            model=DEFAULT_MODEL,
+            model=target_model,
             messages=msgs,
             tools=tools,
             tool_choice="auto"
