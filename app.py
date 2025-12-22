@@ -192,12 +192,12 @@ def ai_msg(event, say, body, client, ack, respond):
                   text=f"I am unable to fufill your request. It looks like you're going through a hard time. Please check out this resource. https://hackclub.enterprise.slack.com/docs/T0266FRGM/F08HU1DD1AP. Remember, you are not alone. :ohneheart:",
                   thread_ts=thread_ts
               )
+              return
         if result.flagged:     
             say(
                 text=f"I cannot fulfill this request because it violates my content moderation policies.",
                 thread_ts=thread_ts
             )
-
             return
     
     except Exception as e:
