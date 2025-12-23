@@ -45,8 +45,8 @@ default_client = OpenAI(
 )
 
 moderation_client = OpenAI(
-    api_key=MODERATION_KEY,
-    base_url=MODERATION_URL
+    base_url=MODERATION_URL,
+    api_key=MODERATION_KEY
 )
 
 app=App(token=SLACK_BOT_TOKEN)
