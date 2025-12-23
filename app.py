@@ -30,6 +30,7 @@ MODERATION_KEY = os.getenv("MODERATION_KEY")
 SEARCH_API_URL= os.getenv("SEARCH_API_URL")
 SEARCH_API_KEY= os.getenv("SEARCH_API_KEY")
 IMGGEN_MODEL = os.getenv("IMGGEN_MODEL")
+LINKUP_API_KEY = os.getenv("LINKUP_API_KEY")
 # --------- MEMORY CONFIG ---------
 SUPABASE_URL= os.getenv("SUPABASE_URL")
 SUPABASE_KEY= os.getenv("SUPABASE_KEY")
@@ -85,10 +86,27 @@ tools = [
                 },
                 "required": ["prompt"],
             }
+            
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "url_scrape",
+            "description": "Scrape content from a specific URL using Linkup. Use this when a user provides a specific link they want you to read.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "url": {
+                        "type": "string",
+                        "description": "The URL to scrape.",
+                    }
+                },
+                "required": ["url"],
+            }
         },
     }
 ]
-
 
 def search_the_web(query):
     print(f"currently searching for {query} :3")
@@ -157,7 +175,36 @@ def download_slack_img(file_url, token):
     except Exception as e:
         print("Failed to download IMG")
         return None
-    
+
+def scrape_url_with_linkup(url):
+    print (f"scraping {url} via linkup :3")
+    try:
+        response = requests.post(
+            f"https://api.linkup.so/v1/fetch",
+            headers={
+                'Authorization': f'Bearer {LINKUP_API_KEY}',
+                'Content-Type': 'application/json',
+            },
+            json ={
+                "url": url,
+                "renderJs": True,
+            },
+            )
+
+        response.raise_for_status()
+        data = response.json()
+
+        return data.get("markdown", "No content")
+    except Exception as e:
+        print(f"*waah* unable scrape URL. {e}")
+        return(f"Unable to scrape {url}")
+
+
+
+
+
+
+
 
 @app.event("member_joined_channel")
 def channel_join_handler(event, say, logger, ack, context, client):
@@ -172,6 +219,7 @@ def channel_join_handler(event, say, logger, ack, context, client):
                     client.conversations_leave(channel=channel_id)
                  except Exception as e:
                      print(f"Unable to leave channel {e}")
+
 
      
 
@@ -341,12 +389,14 @@ You are currently talking to {user_name}.
 The current time is {current_time}
 
 You have access to the following tools:
-- web_search: Use this to search for current information, news, facts, or anything you don't have knowledge about
-- image_generate: Use this to create images based on user requests
+- web_search: Use this to search for current information, news, facts, or anything you don't have knowledge about.
+- image_generate: Use this to create images based on user requests.
+- url_scrape: Use this to extract content from a specific URL provided by the user.
 
 Tool Usage Guidelines:
 - Always use web_search when users ask about current events, recent information, or anything that requires up-to-date data
-- Use image_generate when users ask you to create, generate, or make images
+- Use url_scrape when the user provides a specific link/URL and asks you to read, summarize, or analyze its contents
+- Use image_generate when users ask you to create, generate, or make images.
 
 Image Generation Guidelines:
 When using image_generate, ALWAYS optimize the prompt for best results:
@@ -433,6 +483,16 @@ When using image_generate, ALWAYS optimize the prompt for best results:
                     the_result = search_the_web(arguments.get("query"))
 
                     client.chat_delete(channel=channel_id, ts=status_msg["ts"])
+                
+                elif function_name == "url_scrape":
+                 status_msg = client.chat_postMessage(
+                     channel_id,
+                     thread_ts=thread_ts,
+                     text=f"I'm currently scraping and searching the URL."
+                 )
+                 url = arguments.get("url")
+                 the_result = scrape_url_with_linkup(url)
+                 client.chat_delete(channel=channel_id, ts=status_msg["ts"])
 
                 elif function_name == "image_generate":
                     status_msg = client.chat_postMessage(
