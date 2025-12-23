@@ -410,7 +410,7 @@ def ai_msg(event, say, body, client, ack, respond):
             return
     
     except Exception as e:
-                    print("unable to call moderation API")
+                    print(f"unable to call moderation API. {e}")
 
     supabase.table("chat_mem").insert({
         "channel_id": channel_id,
