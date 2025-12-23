@@ -320,7 +320,7 @@ def help_msg(ack, respond, logger, body):
 			"type": "section",
 			"text": {
 				"type": "plain_text",
-				"text": "2. Search: I can search the web for more information",
+				"text": "2. Search and Deep Research: I can search the web and do deep research for more information",
 				"emoji": True
 			}
 		},
@@ -332,11 +332,19 @@ def help_msg(ack, respond, logger, body):
 				"emoji": True
 			}
 		},
+        {
+			"type": "section",
+			"text": {
+				"type": "plain_text",
+				"text": "4. URL Scraping: I can search specific URLs for more information. ",
+				"emoji": True
+			}
+		},
 		{
 			"type": "section",
 			"text": {
 				"type": "plain_text",
-				"text": "4. Vision: I can see images. Upload an image and ask me about it.",
+				"text": "5. Vision: I can see images. Upload an image and ask me about it.",
 				"emoji": True
 			}
 		}
