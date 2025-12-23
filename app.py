@@ -13,7 +13,6 @@ from openai import OpenAI
 from dotenv import load_dotenv
 from supabase import create_client, Client
 from io import BytesIO
-
 load_dotenv()
 
 # --------- SLACK ENVS ------------
@@ -23,7 +22,7 @@ SLACK_APP_TOKEN= os.getenv("SLACK_APP_TOKEN")
 AI_KEY = os.getenv("AI_KEY")
 AI_BASE_URL = os.getenv("AI_BASE_URL")
 DEFAULT_MODEL = os.getenv("DEFAULT_MODEL")
-ALLOWED_MODELS = ["openai/gpt-5-mini", "moonshotai/kimi-k2-0905", "openai/gpt-oss-120b", "qwen/qwen3-32b", "google/gemini-3-flash-preview" ]
+ALLOWED_MODELS = ["qwen/qwen3-32b", "moonshotai/kimi-k2-instruct-0905", "openai/gpt-oss-120b", "meta-llama/llama-4-scout-17b-16e-instruct", "meta-llama/llama-4-maverick-17b-128e-instruct" ]
 # ---------- MODERATION CONFIG ----------
 MODERATION_URL = os.getenv("MODERATION_URL")
 MODERATION_KEY = os.getenv("MODERATION_KEY")
@@ -35,6 +34,8 @@ IMGGEN_MODEL = os.getenv("IMGGEN_MODEL")
 SUPABASE_URL= os.getenv("SUPABASE_URL")
 SUPABASE_KEY= os.getenv("SUPABASE_KEY")
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
+# ----------- MISC ----------
+ALLOWED_CHANNEL_ID = os.getenv("ALLOWED_CHANNEL_ID")
 
 
 default_client = OpenAI(
@@ -48,7 +49,6 @@ moderation_client = OpenAI(
 )
 
 app=App(token=SLACK_BOT_TOKEN)
-
 
 
 
@@ -157,6 +157,23 @@ def download_slack_img(file_url, token):
     except Exception as e:
         print("Failed to download IMG")
         return None
+    
+
+@app.event("member_joined_channel")
+def channel_join_handler(event, say, logger, ack, context, client):
+    user_id = event["user"]
+    channel_id = event["channel"]
+    bot_user_id = context.get("bot_user_id")
+
+    if user_id == bot_user_id:
+             if channel_id != ALLOWED_CHANNEL_ID:
+                 try:
+                    say(f"Hi, it looks like you added me to a channel. I am only authorized to do tasks in <#{ALLOWED_CHANNEL_ID}. I will be leaving this channel now, goodbye!")
+                    client.conversations_leave(channel=channel_id)
+                 except Exception as e:
+                     print(f"Unable to leave channel {e}")
+
+     
 
 @app.event("message")
 def handle_msg_event(body, logger):
