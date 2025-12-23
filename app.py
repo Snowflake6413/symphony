@@ -92,6 +92,24 @@ tools = [
     {
         "type": "function",
         "function": {
+            "name": "deep_research",
+            "description": "Perform a deep, comprehensive research on a topic. Use this for complex queries, report generation, or when a simple web search is insufficient.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "prompt": {
+                        "type": "string",
+                        "description": "A query to search deeply.",
+                    },
+                },
+                "required": ["prompt"],
+            }
+            
+        },
+    },
+    {
+        "type": "function",
+        "function": {
             "name": "url_scrape",
             "description": "Scrape content from a specific URL using Linkup. Use this when a user provides a specific link they want you to read.",
             "parameters": {
@@ -176,6 +194,31 @@ def download_slack_img(file_url, token):
         print("Failed to download IMG")
         return None
 
+def do_deep_research(query):
+    print (f"deeply researching {query} via linkup :3")
+    try:
+        response = requests.post(
+            f"https://api.linkup.so/v1/fetch",
+            headers={
+                'Authorization': f'Bearer {LINKUP_API_KEY}',
+                'Content-Type': 'application/json',
+            },
+            json ={
+                "q": query,
+                "depth": 'deep',
+                "includeInlineCitations": 'true',
+                "includeSources": 'true',
+            },
+            )
+
+        response.raise_for_status()
+        data = response.json()
+
+        return data.get("markdown", "No content")
+    except Exception as e:
+        print(f"*waah* unable to deep search. {e}")
+        return(f"Unable to deep research {query}")
+
 def scrape_url_with_linkup(url):
     print (f"scraping {url} via linkup :3")
     try:
@@ -198,8 +241,6 @@ def scrape_url_with_linkup(url):
     except Exception as e:
         print(f"*waah* unable scrape URL. {e}")
         return(f"Unable to scrape {url}")
-
-
 
 
 
@@ -390,13 +431,16 @@ The current time is {current_time}
 
 You have access to the following tools:
 - web_search: Use this to search for current information, news, facts, or anything you don't have knowledge about.
+- deep_research: Use this for complex topics, comprehensive reports, market analysis, or when the user specifically asks for "research" or a "deep dive".
 - image_generate: Use this to create images based on user requests.
 - url_scrape: Use this to extract content from a specific URL provided by the user.
 
 Tool Usage Guidelines:
-- Always use web_search when users ask about current events, recent information, or anything that requires up-to-date data
-- Use url_scrape when the user provides a specific link/URL and asks you to read, summarize, or analyze its contents
+- Always use web_search when users ask about current events, recent information, or anything that requires up-to-date data.
+- If the query is too complex, use deep_research to throughly research the query.
+- Use url_scrape when the user provides a specific link/URL and asks you to read, summarize, or analyze its contents.
 - Use image_generate when users ask you to create, generate, or make images.
+- If using deep_resarch, make sure the output is less than 3001 characters.
 
 Image Generation Guidelines:
 When using image_generate, ALWAYS optimize the prompt for best results:
@@ -492,6 +536,17 @@ When using image_generate, ALWAYS optimize the prompt for best results:
                  )
                  url = arguments.get("url")
                  the_result = scrape_url_with_linkup(url)
+                 client.chat_delete(channel=channel_id, ts=status_msg["ts"])
+
+                
+                elif function_name == "deep_research":
+                 status_msg = client.chat_postMessage(
+                     channel=channel_id,
+                     thread_ts=thread_ts,
+                     text=f"I'm currenly deep researching on the top you requested. This might take a few minutes."
+                 )
+                 query = arguments.get("query")
+                 the_result = do_deep_research(query)
                  client.chat_delete(channel=channel_id, ts=status_msg["ts"])
 
                 elif function_name == "image_generate":
