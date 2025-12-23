@@ -486,7 +486,7 @@ When using image_generate, ALWAYS optimize the prompt for best results:
                 
                 elif function_name == "url_scrape":
                  status_msg = client.chat_postMessage(
-                     channel_id=channel_id,
+                     channel=channel_id,
                      thread_ts=thread_ts,
                      text=f"I'm currently scraping and searching the URL."
                  )
