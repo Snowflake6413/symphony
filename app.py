@@ -547,9 +547,9 @@ When using `image_generate`, you must act as a prompt engineer. Never pass a sho
                  status_msg = client.chat_postMessage(
                      channel=channel_id,
                      thread_ts=thread_ts,
-                     text=f"I'm currenly deep researching on the top you requested. This might take a few minutes."
+                     text=f"I'm currenly deep researching on the topic you requested. This might take a few minutes."
                  )
-                 query = arguments.get("query")
+                 query = arguments.get("prompt")
                  the_result = do_deep_research(query)
                  client.chat_delete(channel=channel_id, ts=status_msg["ts"])
 
