@@ -22,7 +22,7 @@ SLACK_APP_TOKEN= os.getenv("SLACK_APP_TOKEN")
 AI_KEY = os.getenv("AI_KEY")
 AI_BASE_URL = os.getenv("AI_BASE_URL")
 DEFAULT_MODEL = os.getenv("DEFAULT_MODEL")
-ALLOWED_MODELS = ["google/gemini-2.5-flash-lite-preview-09-2025", "qwen/qwen3-235b-a22b", "z-ai/glm-4.7", "openai/gpt-oss-120b" ]
+ALLOWED_MODELS = ["google/gemini-2.5-flash-lite-preview-09-2025", "qwen/qwen3-235b-a22b", "z-ai/glm-4.7", "openai/gpt-oss-120b", "moonshotai/kimi-k2.5", "minimax/minimax-m2.1"]
 # ---------- MODERATION CONFIG ----------
 MODERATION_URL = os.getenv("MODERATION_URL")
 MODERATION_KEY = os.getenv("MODERATION_KEY")
